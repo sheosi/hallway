@@ -60,26 +60,14 @@ mod filters {
 
     use aliri::Jwt;
     use tracing::trace;
-    use warp::{hyper::header, Filter, Rejection};
+    use warp::{http::HeaderValue, hyper::header, Filter, Rejection};
 
-    pub fn hashed_cache<F, R>(
-        filter: F,
-    ) -> impl Filter<Extract = (impl warp::Reply,), Error = Rejection> + Clone + Send + Sync + 'static
-    where
-        F: Filter<Extract = (R, String), Error = Rejection> + Clone + Send + Sync + 'static,
-        R: warp::Reply,
-    {
-        filter.map(|reply, hash| {
-            warp::reply::with_header(
-                warp::reply::with_header(
-                    reply,
-                    header::CACHE_CONTROL.as_str(),
-                    "max-age=86400, must-revalidate, private",
-                ),
-                header::ETAG.as_str(),
-                &hash,
-            )
-        })
+    pub fn disable_cache() -> warp::reply::with::WithHeaders {
+        let mut no_cache = warp::http::HeaderMap::new();
+        no_cache.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache, no-store, must-revalidate"));
+        no_cache.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
+        no_cache.insert(header::EXPIRES, HeaderValue::from_static("0"));
+        warp::reply::with::headers(no_cache)
     }
 
     pub fn cache_for<const T: u64, F, R>(
@@ -160,12 +148,11 @@ async fn main() {
         .and(filters::jwt(jwt_decoder))
         .map(move |user_data: common::CurrentUserData| {
             trace!("Jwt received!");
-            let (html, hash) = renderer_clone.clone().render(user_data);
+            let html= renderer_clone.clone().render(user_data);
             trace!("Done rendering");
-            (warp::reply::html(html), hash)
+            warp::reply::html(html)
         })
-        .untuple_one()
-        .with(warp::wrap_fn(filters::hashed_cache));
+        .with(filters::disable_cache());
 
     const TWO_WEEKS: u64 = 2 * 7 * 24 * 60 * 60;
     let assets = warp::path("assets")

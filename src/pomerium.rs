@@ -10,6 +10,8 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct Route {
     pub from: String,
+
+    #[serde(default)]
     pub policy: Policy,
 }
 
@@ -22,9 +24,21 @@ impl Policy {
     }
 
     pub fn check_authorized(&self, email: &str) -> bool {
-        self.0
-            .iter()
-            .any(|p| p.check_authorized(email).try_into().unwrap_or(true))
+        if self.0.is_empty() {
+            true
+        }
+        else {
+            self.0
+                .iter()
+                .any(|p| p.check_authorized(email).try_into().unwrap_or(true))
+        }
+        
+    }
+}
+
+impl Default for Policy {
+    fn default() -> Self {
+        Self(Vec::new())
     }
 }
 

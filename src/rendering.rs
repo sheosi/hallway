@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    hash::{Hash, Hasher},
     path::Path,
     sync::{Arc, RwLock},
     time::{Duration, SystemTime},
@@ -18,7 +17,6 @@ use warp::{http::StatusCode, Rejection};
 #[derive(Clone)]
 struct RenderCacheItem {
     render: String,
-    hash: String,
     time: SystemTime,
 }
 
@@ -40,13 +38,13 @@ impl RenderCache {
         &mut self,
         data: &UserDataRender,
         handlebars: &Arc<Handlebars>,
-    ) -> (String, String) {
+    ) -> String {
         let cached = self
             .dict
             .read()
             .unwrap()
             .get(&data.email)
-            .map(|i| (i.render.clone(), i.hash.clone()));
+            .map(|i| i.render.clone());
 
         cached.unwrap_or_else(|| {
             trace!("Start rendering");
@@ -54,17 +52,13 @@ impl RenderCache {
 
             let render = handlebars.render("index.html", data).unwrap();
 
-            let mut s = std::collections::hash_map::DefaultHasher::new();
-            render.hash(&mut s);
-            let hash = s.finish().to_string();
             let item = RenderCacheItem {
                 render: render.clone(),
-                time: SystemTime::now(),
-                hash: hash.clone(),
+                time: SystemTime::now()
             };
 
             self.dict.write().unwrap().insert(email, item);
-            (render, hash)
+            render
         })
     }
 
@@ -120,7 +114,7 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    pub fn render(&mut self, user_data: crate::common::CurrentUserData) -> (String, String) {
+    pub fn render(&mut self, user_data: crate::common::CurrentUserData) -> String {
         let user_data = self.user_data_holder.get_render(user_data).unwrap();
         trace!("Got user data");
         self.render_cache
