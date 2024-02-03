@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM rust:1.70 as builder
+FROM --platform=$BUILDPLATFORM docker.io/rust:1.75 as builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -22,12 +22,12 @@ RUN rm ./target/$(cat "/.rust-target.temp")/release/deps/hallway* && \
     cp ./target/$(cat "/.rust-target.temp")/release/hallway ./target/hallway-app
 
 
-FROM --platform=$TARGETPLATFORM debian:buster-slim
+FROM --platform=$TARGETPLATFORM debian:bookworm-slim
 ARG APP=/usr/src/app
 
 
 RUN apt-get update \
-    && apt-get install -y ca-certificates tzdata \
+    && apt-get install -y ca-certificates tzdata libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV TZ=Etc/UTC \
