@@ -63,17 +63,14 @@ impl RenderCache {
     }
 
     fn clean_old(dict: &Arc<RwLock<HashMap<String, RenderCacheItem>>>) {
-        const MAX_TIME: u64 = 2 * 24 * 60 * 60; // 2 days max for cache
         dict.write()
             .unwrap()
-            .retain(|_, v| SystemTime::now().duration_since(v.time).unwrap().as_secs() < MAX_TIME)
+            .retain(|_, v| SystemTime::now().duration_since(v.time).unwrap().as_secs() < consts::defaults::MAX_TIME)
     }
 
     fn start_maintenance(self) {
-        const CLEAN_TIME: u64 = 5 * 60 * 60; // 5 hours to check for old caches
-
         task::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(CLEAN_TIME));
+            let mut interval = time::interval(Duration::from_secs(consts::defaults::CLEAN_TIME));
 
             loop {
                 interval.tick().await;

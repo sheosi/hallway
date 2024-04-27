@@ -1,4 +1,4 @@
-use std::{str::FromStr, time::Duration};
+use std::{str::FromStr, thread, time::Duration};
 
 use aliri::{
     jwa,
@@ -73,13 +73,30 @@ impl JwtDecoder {
         Self { validator, keys }
     }
 
-    fn get_keys(domain_name: &str) -> aliri::Jwks {
-        let resp: reqwest::blocking::Response = reqwest::blocking::get(format!(
+    fn get_keys_body(domain_name: &str) -> reqwest::blocking::Response {
+        let mut resp = reqwest::blocking::get(format!(
             "https://{}/.well-known/pomerium/jwks.json",
             domain_name
-        ))
-        .unwrap();
-        resp.json().unwrap()
+        ));
+
+        while resp.is_err() {
+            thread::sleep(std::time::Duration::from_secs(10));
+            resp = reqwest::blocking::get(format!(
+                "https://{}/.well-known/pomerium/jwks.json",
+                domain_name
+            ));
+        }
+        resp.unwrap()
+    }
+
+    fn get_keys(domain_name: &str) -> aliri::Jwks {
+        let mut json = Self::get_keys_body(domain_name).json();
+        while json.is_err() {
+            thread::sleep(std::time::Duration::from_secs(10));
+            json = Self::get_keys_body(domain_name).json();
+        }
+
+        json.unwrap()
     }
 
     #[instrument]
