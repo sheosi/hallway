@@ -51,7 +51,7 @@ mod config {
     }
 
     pub fn load<P: AsRef<Path>>(path: P) -> Config {
-        toml::from_str(&std::fs::read_to_string(path.as_ref()).unwrap()).unwrap()
+        toml::from_str(&std::fs::read_to_string(path.as_ref()).expect("Config can't be read")).expect("Config can't be parsed")
     }
 }
 
@@ -60,7 +60,14 @@ mod filters {
 
     use aliri::Jwt;
     use tracing::trace;
-    use warp::{http::HeaderValue, hyper::header, Filter, Rejection};
+    use warp::{http::HeaderValue, hyper::header, Filter, Rejection, reject};
+
+    use crate::jwt::JwtDecoder;
+
+    #[derive(Debug)]
+    struct MalformedJwt;
+
+    impl reject::Reject for  MalformedJwt{}
 
     pub fn disable_cache() -> warp::reply::with::WithHeaders {
         let mut no_cache = warp::http::HeaderMap::new();
@@ -89,11 +96,11 @@ mod filters {
     /// Extracts a JWT token from the header provided by pomerium
     pub fn jwt(
         jwt_decoder: Arc<crate::jwt::JwtDecoder>,
-    ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = warp::reject::Rejection> + Clone
+    ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = Rejection> + Clone
     {
-        warp::header::header("X-Pomerium-Jwt-Assertion").map(move |s: String| {
+        warp::header::header("X-Pomerium-Jwt-Assertion").map(move|s|(s, jwt_decoder.clone())).and_then(  move |(s, jwt_decoder):(String, Arc<JwtDecoder>)| async move {
             trace!(jwt = s);
-            jwt_decoder.decode(Jwt::from(s))
+            jwt_decoder.decode(Jwt::from(s)).ok_or(reject::custom(MalformedJwt))
         })
     }
 }
@@ -181,12 +188,12 @@ async fn main() {
 
     let http_port = std::env::var("HTTP_PORT")
         .ok()
-        .map(|s: String| s.parse::<u16>().unwrap())
+        .map(|s: String| s.parse::<u16>().expect("Not a valid port"))
         .unwrap_or(consts::defaults::HTTP_PORT);
 
     let serve_address = std::env::var("HTTP_ADDRESS")
         .ok()
-        .map(|s: String| s.parse::<Ipv4Addr>().unwrap().octets())
+        .map(|s: String| s.parse::<Ipv4Addr>().expect("Not a valid IPv4 address").octets())
         .unwrap_or(consts::defaults::SERVE_ADRESS);
 
     // spawn proxy server

@@ -11,7 +11,7 @@ use crate::pomerium;
 use handlebars::Handlebars;
 use serde::Serialize;
 use tokio::{task, time};
-use tracing::trace;
+use tracing::{error, trace, warn};
 use warp::{http::StatusCode, Rejection};
 
 #[derive(Clone)]
@@ -50,7 +50,7 @@ impl RenderCache {
             trace!("Start rendering");
             let email = data.email.clone();
 
-            let render = handlebars.render("index.html", data).unwrap();
+            let render = handlebars.render("index.html", data).expect("Failed to render index file");
 
             let item = RenderCacheItem {
                 render: render.clone(),
@@ -65,7 +65,12 @@ impl RenderCache {
     fn clean_old(dict: &Arc<RwLock<HashMap<String, RenderCacheItem>>>) {
         dict.write()
             .unwrap()
-            .retain(|_, v| SystemTime::now().duration_since(v.time).unwrap().as_secs() < consts::defaults::MAX_TIME)
+            .retain(|_, v|
+                SystemTime::now()
+                .duration_since(v.time)
+                .map(|d|d.as_secs())
+                .unwrap_or_else(|e|{warn!("Somehow got a cache entry in the future, did the clock change? {}", e);consts::defaults::MAX_TIME + 1}) 
+            < consts::defaults::MAX_TIME)
     }
 
     fn start_maintenance(self) {
@@ -95,8 +100,8 @@ impl<'a> Renderer<'a> {
     ) -> Self {
         let mut handlebars = Handlebars::new();
         handlebars
-            .register_template_string("index.html", std::fs::read_to_string(index_path).unwrap())
-            .unwrap();
+            .register_template_string("index.html", std::fs::read_to_string(index_path).expect("Couldn't read index.html: {}"))
+            .expect("Malformed template");
 
         let emails = Self::extract_emails(&pomerium_data);
         let routes = collections::RouteHolder::from(conf_routes);
@@ -112,7 +117,10 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn render(&mut self, user_data: crate::common::CurrentUserData) -> String {
-        let user_data = self.user_data_holder.get_render(user_data).unwrap();
+        let user_data = self.user_data_holder.get_render(&user_data).unwrap_or_else(|| {
+            warn!("Unregistered user '{}' '{}' has accesed the hallway", &user_data.name, &user_data.email);
+            UserDataRender{name: user_data.name, email: user_data.email, background: consts::defaults::BACKGROUND.to_string(), accessible_routes: Vec::new()}
+        });
         trace!("Got user data");
         self.render_cache
             .get_or_render(&user_data, &self.handlebars)
@@ -134,8 +142,8 @@ pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>) -> (String
         handlebars: &Arc<Handlebars>,
         data: &HashMap<String, String>,
     ) -> String {
-        let html = std::fs::read_to_string(path.as_ref()).unwrap();
-        handlebars.render_template(&html, &data).unwrap()
+        let html = std::fs::read_to_string(path.as_ref()).unwrap_or_else(|e| panic!("Couldn't read '{}': {}", path.as_ref().display(), e));
+        handlebars.render_template(&html, &data).unwrap_or_else(|e|{error!("Can't render page: {}", e); "Sorry we had an error!".to_string()})
     }
 
     if err.is_not_found() {
@@ -168,13 +176,13 @@ pub struct UserDataRender {
 }
 
 mod collections {
-    use crate::{config, pomerium};
+    use crate::{config, consts, pomerium};
     use std::{
         collections::{HashMap, HashSet},
         sync::Arc,
     };
 
-    use tracing::trace;
+    use tracing::{trace, warn};
 
     pub struct RouteHolder {
         routes: Arc<Vec<Arc<config::Route>>>,
@@ -197,7 +205,13 @@ mod collections {
             self.routes
                 .iter()
                 .filter(|r| {
-                    let a = policy_holder.get(&r.path).unwrap().check_authorized(email);
+                    let a = if let Some(policy) = policy_holder.get(&r.path){
+                        policy.check_authorized(email)
+                    }
+                    else {
+                        warn!("Path {} is invalid", &r.path);
+                        false
+                    };
                     trace!(route = r.path, email = email, authed = a);
                     a
                 })
@@ -254,14 +268,15 @@ mod collections {
             }
         }
 
+        /// Will get none if the user is not registered
         pub fn get_render(
             &self,
-            user: crate::common::CurrentUserData,
+            user: &crate::common::CurrentUserData,
         ) -> Option<super::UserDataRender> {
             self.dict.get(&user.email).map(|u| super::UserDataRender {
-                name: user.name,
-                email: user.email,
-                background: "background.avif".to_string(),
+                name: user.name.clone(),
+                email: user.email.clone(),
+                background: consts::defaults::BACKGROUND.to_string(),
                 accessible_routes: u
                     .accessible_routes
                     .iter()

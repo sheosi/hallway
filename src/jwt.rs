@@ -25,11 +25,16 @@ pub struct Oauth2Claims {
     name: String,
 }
 
+fn extract_num(n: serde_json::Number) -> Option<u64> {
+    if let Some(u) = n.as_u64() {Some(u)}
+    else {n.as_f64().map(|f| f as u64)}
+}
+
 impl CoreClaims for Oauth2Claims {
     fn nbf(&self) -> Option<UnixTime> {
         self.nbf
             .clone()
-            .map(|n| UnixTime(n.as_u64().unwrap_or_else(|| n.as_f64().unwrap() as u64)))
+            .and_then(|n| extract_num(n).map(UnixTime))
     }
 
     fn aud(&self) -> &jwt::Audiences {
@@ -39,7 +44,7 @@ impl CoreClaims for Oauth2Claims {
     fn exp(&self) -> Option<UnixTime> {
         self.exp
             .clone()
-            .map(|n| UnixTime(n.as_u64().unwrap_or_else(|| n.as_f64().unwrap() as u64)))
+            .and_then(|n| extract_num(n).map(UnixTime))
     }
 
     fn iss(&self) -> Option<&jwt::IssuerRef> {
@@ -65,8 +70,8 @@ impl JwtDecoder {
         let validator = jwt::CoreValidator::default()
             .ignore_expiration()
             .add_approved_algorithm(jwa::Algorithm::ES256)
-            .add_allowed_audience(jwt::Audience::from_str(domain_name).unwrap())
-            .require_issuer(jwt::Issuer::from_str(domain_name).unwrap())
+            .add_allowed_audience(jwt::Audience::from_str(domain_name).expect("Malformed domain name"))
+            .require_issuer(jwt::Issuer::from_str(domain_name).expect("Malformed domain name"))
             .check_expiration()
             .with_leeway(Duration::from_secs(60));
 
@@ -86,7 +91,7 @@ impl JwtDecoder {
                 domain_name
             ));
         }
-        resp.unwrap()
+        resp.unwrap() // This unwrap is fine
     }
 
     fn get_keys(domain_name: &str) -> aliri::Jwks {
@@ -96,19 +101,18 @@ impl JwtDecoder {
             json = Self::get_keys_body(domain_name).json();
         }
 
-        json.unwrap()
+        json.unwrap() // This unwrap is fine
     }
 
     #[instrument]
-    pub fn decode(&self, jwt: Jwt) -> crate::common::CurrentUserData {
+    pub fn decode(&self, jwt: Jwt) -> Option<crate::common::CurrentUserData> {
         trace!("Decomposing");
-        let decomposed: jwt::Decomposed = jwt.decompose().unwrap();
+        let decomposed: jwt::Decomposed = jwt.decompose().ok()?;
 
         trace!("Getting key ref");
         let key_ref = self
             .keys
-            .get_key_by_id(decomposed.kid().unwrap(), decomposed.alg())
-            .unwrap();
+            .get_key_by_id(decomposed.kid()?, decomposed.alg())?;
 
         trace!("Verifying");
         let data: jwt::Validated<Oauth2Claims> = jwt
@@ -119,9 +123,9 @@ impl JwtDecoder {
 
         trace!("Done!");
 
-        crate::common::CurrentUserData {
+        Some(crate::common::CurrentUserData {
             email: claims.email.clone(),
             name: claims.name.clone(),
-        }
+        })
     }
 }

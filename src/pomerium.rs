@@ -15,7 +15,7 @@ pub struct Route {
     pub policy: Policy,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Policy(Vec<PolicyAction>);
 
 impl Policy {
@@ -33,12 +33,6 @@ impl Policy {
                 .any(|p| p.check_authorized(email).try_into().unwrap_or(true))
         }
         
-    }
-}
-
-impl Default for Policy {
-    fn default() -> Self {
-        Self(Vec::new())
     }
 }
 
@@ -160,13 +154,13 @@ mod matchers {
 }
 
 pub fn load_conf<P: AsRef<Path>>(path: P) -> Config {
-    let file = std::fs::File::open(path.as_ref()).unwrap();
-    serde_yaml::from_reader(file).unwrap()
+    let file = std::fs::File::open(path.as_ref()).expect("Couldn't open pomerium config file");
+    serde_yaml::from_reader(file).expect("Pomerium config was malformed:")
 }
 
 #[cfg(test)]
 pub fn load_from_str(conf: &str) -> Config {
-    serde_yaml::from_str(conf).unwrap()
+    serde_yaml::from_str(conf).expect("Malformed yaml file")
 }
 
 pub mod policy {
@@ -293,7 +287,7 @@ pub mod policy {
         if crit_vec.is_empty() {
             PolicyCheckerResult::Empty
         } else {
-            check_pol(crit_vec.iter()).into()
+            check_pol(crit_vec.iter())
         }
     }
 

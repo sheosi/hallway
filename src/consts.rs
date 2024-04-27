@@ -3,6 +3,7 @@ pub mod defaults {
     pub const SERVE_ADRESS: [u8; 4] = [0, 0, 0, 0];
     pub const CLEAN_TIME: u64 = 5 * 60 * 60; // 5 hours to check for old caches
     pub const MAX_TIME: u64 = 2 * 24 * 60 * 60; // 2 days max for cache
+    pub const BACKGROUND: &str = "background.avif";
 }
 pub mod paths {
     const CURRENT_DIR: &str = "./";
