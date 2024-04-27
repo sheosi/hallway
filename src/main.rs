@@ -163,7 +163,7 @@ async fn main() {
 
     const TWO_WEEKS: u64 = 2 * 7 * 24 * 60 * 60;
     let assets = warp::path("assets")
-        .and(warp::fs::dir(html_files.join("assets")))
+        .and(warp::fs::dir(html_files.join(html_files.join("assets"))))
         .or(static_file("apple-touch-icon.png"))
         .or(static_file("favicon-16x16.png"))
         .or(static_file("favicon-32x32.png"))

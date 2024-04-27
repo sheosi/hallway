@@ -1,0 +1,158 @@
+@font-face {
+    font-display: swap;
+    font-family: SoraVariable;
+    src: url("Sora-VariableFont_wght.woff2");
+}
+
+html.fonts-loaded {
+    font-family: "SoraVariable", "Arial";
+}
+
+html {
+    margin: 0;
+    height: 100%;
+    
+    font-size: 16px;
+    line-height: 1.6;
+    font-family: Arial;
+    font-weight: 500;
+    letter-spacing: 1.3px;
+    word-spacing: -2px;
+    color: black;
+    visibility: visible;
+}
+body {
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    -webkit-font-smoothing: antialiased; 
+    letter-spacing: 0.005em;
+    background-image: url("background.avif");
+    
+    display: flex;
+    height: 100%;
+    margin: 0;
+}
+.card {
+    backdrop-filter: blur(8px) saturate(187%);
+    -webkit-backdrop-filter: blur(8px) saturate(187%);
+    background-color: rgba(254, 255, 232, 0.42);
+    border-radius: 12px;
+    border: 1px solid rgba(209, 213, 219, 0.3);
+    padding: 1.1em;
+}
+ 
+.vertical {
+    flex-direction: column;
+}
+
+.horizontal {
+    flex-direction: row;
+}
+
+.centered-childs {
+    align-items: center;
+}
+
+.fill {
+    align-items: stretch;
+}
+
+:not(.vertical) > .last {
+    margin-left: auto;
+}
+
+.vertical > .last {
+    margin-top: auto;
+}
+
+.cute-button {
+    --button-color: #FEFFE8;
+    border-color: transparent;
+    border-radius: 8px;
+    height: 3em;
+    background-color: var(--button-color);
+    opacity: 0.75;
+    border-radius: 12px;
+    border: 1px solid rgba(209, 213, 219, 0.3);
+    padding: 0.45em 0.73em;
+    filter: drop-shadow(3px 3px 5px #545454AA);
+    transition: background-color 0.8s;
+    animation-timing-function: ease-out;
+}
+
+.cute-button:hover {
+    background-color: rgba(254, 255, 232, 0.95);
+}
+
+.cute-button a {
+    display: inline-flex;
+    align-items: center; 
+    justify-content: center;
+}
+
+.cute-button img {
+    max-height: 1.3em;
+    margin-right: 0.6em;
+}
+
+.cute-button p {
+    font-size: 15px;
+}
+
+.wrap {
+    flex-wrap: wrap;
+}
+
+.enormous {
+    font-size: 200px;
+    margin: 0;
+}
+
+h1,h2,h3,h4,h5,h6,p {
+    color: rgba(0, 0, 0, 0.65);
+    margin: 0;
+}
+h1 {
+    font-size: 18px;
+}
+@media (min-width:450px) {
+    h1 {
+        font-size: 23px;
+    }
+    .responsive-width {
+        width: 85%;
+    }
+}
+@media (min-width:600px) {
+    h1 {
+        font-size: 30px;
+    }
+
+    .responsive-width {
+        width: 73%;
+    }
+}
+@media (min-width:700px) {
+    h1 {
+        font-size: 34px;
+    }
+
+    .responsive-width {
+        width: 69%;
+    }
+}
+p {
+    margin: 0;
+}
+
+ div {
+     display: flex;
+     gap: 0.9em;
+ }
+
+ a {
+     text-decoration: none;
+     color: black;
+ }
