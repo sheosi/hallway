@@ -25,7 +25,7 @@ impl Policy {
 
     pub fn check_authorized(&self, email: &str) -> bool {
         if self.0.is_empty() {
-            true
+            false
         }
         else {
             self.0
@@ -170,7 +170,7 @@ pub mod policy {
     use serde::Deserialize;
     use tracing::trace;
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum PolicyCheckerResult {
         Passed,
         NotPassed,
