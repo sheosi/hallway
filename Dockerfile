@@ -42,7 +42,7 @@ EXPOSE 8080
 
 ADD html_files /html_files
 COPY --from=builder /hallway/target/hallway-app ${APP}/hallway
-RUN chown -R $APP_USER:$APP_USER ${APP}
+RUN chown -R $APP_USER:$APP_USER ${APP};  chown -R $APP_USER:$APP_USER /html_files
 USER $APP_USER
 WORKDIR ${APP}
 CMD ["./hallway"]
