@@ -8,7 +8,7 @@ pub mod defaults {
     #[cfg(not(feature="container"))]
     pub mod debug {
         pub const EMAIL: &str = "testuser@testmail.com";
-        pub const NAME: &str = "Test USer";
+        pub const NAME: &str = "Test User";
     }
 }
 

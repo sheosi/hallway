@@ -67,7 +67,7 @@ mod config {
     pub fn load<P: AsRef<Path>>(path: P) -> Config {
         fn fill_in_internals(routes: &mut [Route]) {
             routes.iter_mut().for_each(|route|{
-                route.escaped_label = route.label.replace(' ', "_").replace('.', "_");
+                route.escaped_label = route.label.replace([' ','.'], "_");
                 match  &mut route.data {
                     RouteData::Path(_) => route.is_group = false,
                     RouteData::Group(group) => {

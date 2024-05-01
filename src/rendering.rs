@@ -117,10 +117,7 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn render(&mut self, user_data: crate::common::CurrentUserData) -> String {
-        let user_data = self.user_data_holder.get_render(&user_data).unwrap_or_else(|| {
-            warn!("Unregistered user '{}' '{}' has accesed the hallway", &user_data.name, &user_data.email);
-            UserDataRender{name: user_data.name, email: user_data.email, background: consts::defaults::BACKGROUND.to_string(), accessible_routes: Vec::new()}
-        });
+        let user_data = self.user_data_holder.get_render(&user_data);
         trace!("Got user data");
         self.render_cache
             .get_or_render(&user_data, &self.handlebars)
@@ -182,7 +179,7 @@ mod collections {
         sync::Arc,
     };
 
-    use tracing::{trace, warn};
+    use tracing::{info, trace, warn};
 
     pub struct RouteHolder {
         routes: Arc<Vec<Arc<config::Route>>>,
@@ -266,6 +263,7 @@ mod collections {
     #[derive(Clone)]
     pub struct UserDataHolder {
         dict: Arc<HashMap<String, UserData>>,
+        public_urls: Vec<Arc<config::Route>>
     }
 
     impl UserDataHolder {
@@ -281,8 +279,10 @@ mod collections {
                 })
                 .collect::<HashMap<String, UserData>>();
 
+            let public_urls = routes.can_be_accessed_by("", &policies);
             Self {
                 dict: Arc::new(dict),
+                public_urls
             }
         }
 
@@ -290,7 +290,7 @@ mod collections {
         pub fn get_render(
             &self,
             user: &crate::common::CurrentUserData,
-        ) -> Option<super::UserDataRender> {
+        ) -> super::UserDataRender {
             self.dict.get(&user.email).map(|u| super::UserDataRender {
                 name: user.name.clone(),
                 email: user.email.clone(),
@@ -300,7 +300,19 @@ mod collections {
                     .iter()
                     .map(|r| (**r).clone())
                     .collect::<Vec<_>>(),
-            })
+            }).unwrap_or_else(|| {
+                info!("Unregistered user '{}' '{}' has accesed the hallway", &user.name, &user.email);
+
+                super::UserDataRender {
+                    name: user.name.clone(),
+                    email: user.email.clone(),
+                    background: consts::defaults::BACKGROUND.to_string(),
+                    accessible_routes: self
+                        .public_urls
+                        .iter()
+                        .map(|r|(**r).clone())
+                        .collect::<Vec<_>>()
+            }})
         }
     }
 }
