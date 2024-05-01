@@ -11,6 +11,25 @@ pub mod defaults {
         pub const NAME: &str = "Test USer";
     }
 }
+
+pub mod time {
+    pub const fn weeks(weeks: u64) -> u64 {
+        days(weeks * 7)
+    }
+
+    pub const fn days(days: u64) -> u64 {
+        hours(days * 24)
+    }
+
+    pub const fn hours(hours: u64) -> u64 {
+        minutes(hours * 60)
+    }
+
+    pub const fn minutes(minutes: u64) -> u64 {
+        60 * minutes
+    }
+}
+
 pub mod paths {
     const CURRENT_DIR: &str = "./";
 

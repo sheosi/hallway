@@ -135,27 +135,27 @@
             <div class="centered-childs">
                 <img style="min-width: 2em; width: 20%; max-width:4.5em" src="assets/lilylab-logo.webp" alt=""/>
                 <h1>Welcome to <span style="color: rgba(150, 150, 150, 0.65);">LilyLab</span>, {{name}}</h1>
-                <button class="cute-button last"><a href="oauth2/sign_out"><img src="assets/logout.webp" alt=""/><p>Log Out</p></a></button>
+                <button class="cute-button last"><a href="oauth2/sign_out"><img src="assets/log-out.webp" alt=""/><p>Log Out</p></a></button>
             </div>
             <br><br>
-            <div class="horizontal centered-childs wrap" style="margin:auto;max-width:70em;flex-grow:1;flexbox-direction: row;justify-content: space-around;gap:auto;">
+            <div class="horizontal centered-childs wrap" style="width: 100%;display: grid;row-gap: 4em;column-gap: 1em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));">
                 {{#each accessible_routes}}
                 {{#if this.is_group}}
-                <div data-popup="{{this.escapped_label}}" class="big-button" style="--button-color:{{button_color}}"></div>
+                <div data-popup="popup-{{this.escaped_label}}" class="big-button popup-button" style="--button-color:{{button_color}}">
                 {{else}}
-                <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}"></a>
+                <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}">
                 {{/if}}
-                    <button class="cute-button"><img src="/assets/{{this.icon}}" alt=""/></button>
+                    <button class="cute-button"><img src="assets/{{this.icon}}" alt=""/></button>
                     <p>{{this.label}}</p>
                 {{#if this.is_group}}
                 </div>
                 <div class="popup" id="popup-{{this.escaped_label}}">
                     <div class="card"
-                    style="width: 100%;display: grid;gap: 1em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));width:32em;">
+                    style="width:32em;display: grid;gap: 2em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));">
 
                     {{#each this.accessible_routes}}
                         <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}">
-                            <button class="cute-button"><img src="/assets/{{this.icon}}" alt="" /></button>
+                            <button class="cute-button"><img src="assets/{{this.icon}}" alt="" /></button>
                             <p>{{this.label}}</p>
                         </a>
                     {{/each}}
@@ -168,4 +168,6 @@
             </div>
         </div>
     </body>
+
+    <p>Icons by <a href = "https://www.iconfinder.com/iconsets/feather-5">Feather Icons</a></p>
 </html>

@@ -207,7 +207,7 @@ async fn main() {
         })
         .with(filters::disable_cache());
 
-    const TWO_WEEKS: u64 = 2 * 7 * 24 * 60 * 60;
+    const TWO_WEEKS: u64 = consts::time::weeks(2);
     let assets = warp::path("assets")
         .and(warp::fs::dir(html_files.join("assets")))
         .or(static_file("apple-touch-icon.png"))
