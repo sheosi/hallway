@@ -4,6 +4,12 @@ pub mod defaults {
     pub const CLEAN_TIME: u64 = 5 * 60 * 60; // 5 hours to check for old caches
     pub const MAX_TIME: u64 = 2 * 24 * 60 * 60; // 2 days max for cache
     pub const BACKGROUND: &str = "background.avif";
+
+    #[cfg(not(feature="container"))]
+    pub mod debug {
+        pub const EMAIL: &str = "testuser@testmail.com";
+        pub const NAME: &str = "Test USer";
+    }
 }
 pub mod paths {
     const CURRENT_DIR: &str = "./";
@@ -24,7 +30,7 @@ pub mod paths {
         if cfg!(feature = "container") {
             HTML_FILES
         } else {
-            CURRENT_DIR
+            "./html_files"
         }
     }
 }

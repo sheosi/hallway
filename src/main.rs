@@ -35,8 +35,18 @@ mod config {
         pub path: String,
         pub label: String,
 
+        #[serde(default)]
+        pub accessible_routes: Vec<Route>,
+
         #[serde(default = "defaults::button_color")]
         pub button_color: String,
+
+        // Internal data
+        #[serde(skip_deserializing)]
+        pub escaped_label: String,
+
+        #[serde(skip_deserializing)]
+        pub is_group: bool,
     }
 
     #[derive(Debug, Deserialize)]
@@ -51,17 +61,33 @@ mod config {
     }
 
     pub fn load<P: AsRef<Path>>(path: P) -> Config {
-        toml::from_str(&std::fs::read_to_string(path.as_ref()).expect("Config can't be read")).expect("Config can't be parsed")
+        fn fill_in_internals(routes: &mut [Route]) {
+            routes.iter_mut().for_each(|route|{
+                route.escaped_label = route.label.replace(' ', "_").replace('.', "_");
+                route.is_group = !route.accessible_routes.is_empty();
+                fill_in_internals(&mut route.accessible_routes);
+            })
+        }
+
+        let mut conf: Config = toml::from_str(&std::fs::read_to_string(path.as_ref()).expect("Config can't be read")).expect("Config can't be parsed");
+        // Fill escaped names
+        fill_in_internals(&mut conf.routes);
+        conf
     }
 }
 
 mod filters {
     use std::sync::Arc;
 
+    #[cfg(feature = "container")]
     use aliri::Jwt;
+    #[cfg(feature = "container")]
     use tracing::trace;
     use warp::{http::HeaderValue, hyper::header, Filter, Rejection, reject};
 
+    use crate::consts;
+
+    #[cfg(feature = "container")]
     use crate::jwt::JwtDecoder;
 
     #[derive(Debug)]
@@ -93,7 +119,11 @@ mod filters {
         })
     }
 
+    // Unfortunately, we can't just use debug here for testing since it is somehow dropping
+    // the context in my build
+
     /// Extracts a JWT token from the header provided by pomerium
+    #[cfg(feature = "container")]
     pub fn jwt(
         jwt_decoder: Arc<crate::jwt::JwtDecoder>,
     ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = Rejection> + Clone
@@ -101,6 +131,22 @@ mod filters {
         warp::header::header("X-Pomerium-Jwt-Assertion").map(move|s|(s, jwt_decoder.clone())).and_then(  move |(s, jwt_decoder):(String, Arc<JwtDecoder>)| async move {
             trace!(jwt = s);
             jwt_decoder.decode(Jwt::from(s)).ok_or(reject::custom(MalformedJwt))
+        })
+    }
+
+    #[cfg(not(feature = "container"))]
+    pub fn jwt(
+        _: Arc<crate::jwt::JwtDecoder>,
+    ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = std::convert::Infallible> + Clone
+    {
+
+        // Unfortunately, we can't just use debug here for testing since it is somehow dropping
+        // the context in my build
+        warp::any().map(||{
+            crate::common::CurrentUserData { 
+                email: consts::defaults::debug::EMAIL.to_string(), 
+                name: consts::defaults::debug::NAME.to_string()
+            }
         })
     }
 }
@@ -163,7 +209,7 @@ async fn main() {
 
     const TWO_WEEKS: u64 = 2 * 7 * 24 * 60 * 60;
     let assets = warp::path("assets")
-        .and(warp::fs::dir(html_files.join(html_files.join("assets"))))
+        .and(warp::fs::dir(html_files.join("assets")))
         .or(static_file("apple-touch-icon.png"))
         .or(static_file("favicon-16x16.png"))
         .or(static_file("favicon-32x32.png"))

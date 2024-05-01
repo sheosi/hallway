@@ -5,6 +5,62 @@
         <title>Welcome to LilyLab!</title>
         <link href="assets/frosting.css" rel="stylesheet" type="text/css" media="all">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <script>
+            function ready(fn) {
+                if (document.readyState !== 'loading') {
+                    fn();
+                } else {
+                    document.addEventListener('DOMContentLoaded', fn);
+                }
+            }
+            function addEventListener2(el, eventName, eventHandler, selector) {
+                if (selector) {
+                    const wrappedHandler = (e) => {
+                        if (!e.target) return;
+                        const el = e.target.closest(selector);
+                        if (el) {
+                            eventHandler.call(el, e);
+                        }
+                    };
+                    el.addEventListener(eventName, wrappedHandler);
+                    return wrappedHandler;
+                } else {
+                    const wrappedHandler = (e) => {
+                        eventHandler.call(el, e);
+                    };
+                    el.addEventListener(eventName, wrappedHandler);
+                    return wrappedHandler;
+                }
+            }
+            var curr_popup="";
+            function hide_popup() {
+                // If user clicks inside the element, do nothing
+                if (event.target.closest("#"+curr_popup)) return;
+                let cl = document.querySelector("#"+curr_popup).classList;
+                cl.remove("start");
+                cl.add("end");
+                document.removeEventListener("mouseup",hide_popup);
+                setTimeout(function() {
+                    cl.remove("shown");
+                    cl.remove("end");
+                    //launchpad.find("nav").removeClass("scale-up");
+                }, 500);
+            }
+            ready(function(){
+                document.querySelectorAll(".popup-button").forEach((button)=>{
+                    addEventListener2(button, "click",function() {
+                        curr_popup = this.dataset.popup;
+                        let cl = document.querySelector("#"+this.dataset.popup).classList;
+                        if (!cl.contains("shown")) {
+                            cl.add("shown");
+                            cl.add("start");
+                            document.addEventListener("mouseup", hide_popup);
+                        };
+                    });
+                });
+            });
+        </script>
         <style>
             .big-button {
                 flex-direction: column;
@@ -45,6 +101,33 @@
                 color: rgba(40, 40, 40, 255);
                 transform: translate(0, -0.4em);
             }
+            .popup{
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .popup.shown {
+            display:block;
+        }
+        .popup.shown.start {
+        -webkit-animation: show 0.5s 1;
+                animation: show 0.5s 1;
+        }
+        .popup.shown.end {
+        -webkit-animation: hide 0.5s 1;
+                animation: hide 0.5s 1;
+        }
+
+        @keyframes show {
+            0% { opacity: 0; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes hide {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.2); }
+        }
         </style>
     </head>
     <body style="background-image: url('assets/{{background}}');" >
@@ -55,15 +138,33 @@
                 <button class="cute-button last"><a href="oauth2/sign_out"><img src="assets/logout.webp" alt=""/><p>Log Out</p></a></button>
             </div>
             <br><br>
-            <div class="centered-childs" style="margin-top:1%">
-                <div class="horizontal centered-childs wrap" style="margin:auto;max-width:70em;flex-grow:1;flexbox-direction: row;justify-content: space-around;gap:auto;">
-                    {{#each accessible_routes}}
-                    <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}">
-                        <button class="cute-button"><img src="/assets/{{this.icon}}" alt=""/></button>
-                        <p>{{this.label}}</p>
-                    </a>
-                    {{/each}}
+            <div class="horizontal centered-childs wrap" style="margin:auto;max-width:70em;flex-grow:1;flexbox-direction: row;justify-content: space-around;gap:auto;">
+                {{#each accessible_routes}}
+                {{#if this.is_group}}
+                <div data-popup="{{this.escapped_label}}" class="big-button" style="--button-color:{{button_color}}"></div>
+                {{else}}
+                <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}"></a>
+                {{/if}}
+                    <button class="cute-button"><img src="/assets/{{this.icon}}" alt=""/></button>
+                    <p>{{this.label}}</p>
+                {{#if this.is_group}}
                 </div>
+                <div class="popup" id="popup-{{this.escaped_label}}">
+                    <div class="card"
+                    style="width: 100%;display: grid;gap: 1em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));width:32em;">
+
+                    {{#each this.accessible_routes}}
+                        <a href="{{this.path}}" class="big-button" style="--button-color:{{button_color}}">
+                            <button class="cute-button"><img src="/assets/{{this.icon}}" alt="" /></button>
+                            <p>{{this.label}}</p>
+                        </a>
+                    {{/each}}
+                    </div>
+                </div>
+                {{else}}
+                </a>
+                {{/if}}
+                {{/each}}
             </div>
         </div>
     </body>
