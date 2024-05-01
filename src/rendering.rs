@@ -205,7 +205,7 @@ mod collections {
             fn check_route(email: &str, policy_holder: &PolicyHolder, r_data: &RouteData) -> bool {
                 match &r_data {
                     RouteData::Path(path) => {
-                        let res = if let Some(policy) = policy_holder.get(&path){
+                        let res = if let Some(policy) = policy_holder.get(path){
                             policy.check_authorized(email)
                         }
                         else {
@@ -239,7 +239,15 @@ mod collections {
         pub fn from(pomerium_data: Vec<pomerium::Route>) -> Self {
             let dict = pomerium_data
                 .into_iter()
-                .map(|r| (r.from, r.policy))
+                .map(|r| { 
+                    let policy = if r.allow_public_unauthenticated_access {
+                        crate::pomerium::Policy::allow_all()
+                    }
+                    else {
+                        r.policy
+                    };
+                    (r.from, policy)
+                })
                 .collect();
             Self {
                 dict: Arc::new(dict),

@@ -2,6 +2,8 @@ use policy::PolicyChecker;
 use serde::Deserialize;
 use std::{collections::HashSet, path::Path};
 
+use self::policy::{AndPolicy, NorPolicy, NotPolicy, OrPolicy};
+
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub routes: Vec<Route>,
@@ -12,6 +14,9 @@ pub struct Route {
     pub from: String,
 
     #[serde(default)]
+    pub allow_public_unauthenticated_access: bool,
+
+    #[serde(default)]
     pub policy: Policy,
 }
 
@@ -19,6 +24,9 @@ pub struct Route {
 pub struct Policy(Vec<PolicyAction>);
 
 impl Policy {
+    pub fn allow_all() -> Policy {
+        Policy(vec![PolicyAction{allow: ActionOperator::any(), deny: ActionOperator::empty()}])
+    }
     pub fn extract_emails(&self, hash_set: &mut HashSet<String>) {
         self.0.iter().for_each(|a| a.extract_emails(hash_set));
     }
@@ -68,6 +76,24 @@ struct ActionOperator {
 }
 
 impl ActionOperator {
+    fn any() -> ActionOperator {
+        ActionOperator {
+            or: OrPolicy(vec![ActionCriteria::Accept{accept: matchers::Empty(serde_yaml::Value::Null)}]),
+            and: AndPolicy(vec![]),
+            not: NotPolicy(vec![]),
+            nor: NorPolicy(vec![])
+        }
+    }
+
+    fn empty() -> ActionOperator {
+        ActionOperator {
+            or: OrPolicy(vec![]),
+            and: AndPolicy(vec![]),
+            not: NotPolicy(vec![]),
+            nor: NorPolicy(vec![])
+        }
+    }
+
     fn extract_emails(&self, hash_set: &mut HashSet<String>) {
         self.or.extract_emails(hash_set);
         self.and.extract_emails(hash_set);
@@ -128,7 +154,7 @@ mod matchers {
 
     // This is to accept accept inputed as Yaml requires something
     #[derive(Debug, Deserialize)]
-    pub struct Empty(serde_yaml::Value);
+    pub struct Empty(pub(super) serde_yaml::Value);
 
     impl super::policy::PolicyChecker for String {
         fn check_authorized(&self, email: &str) -> PolicyCheckerResult {
@@ -153,14 +179,28 @@ mod matchers {
     }
 }
 
+fn apply_modifications(conf: &mut Config) {
+    // Some config entries overwrite the policy
+    conf.routes.iter_mut().for_each(|r|{
+        if r.allow_public_unauthenticated_access {
+            r.policy = crate::pomerium::Policy::allow_all()
+        }
+    });
+}
+
 pub fn load_conf<P: AsRef<Path>>(path: P) -> Config {
     let file = std::fs::File::open(path.as_ref()).expect("Couldn't open pomerium config file");
-    serde_yaml::from_reader(file).expect("Pomerium config was malformed:")
+    let mut conf: Config = serde_yaml::from_reader(file).expect("Pomerium config was malformed:");
+
+    apply_modifications(&mut conf);
+    conf
 }
 
 #[cfg(test)]
 pub fn load_from_str(conf: &str) -> Config {
-    serde_yaml::from_str(conf).expect("Malformed yaml file")
+    let mut conf = serde_yaml::from_str(conf).expect("Malformed yaml file");
+    apply_modifications(&mut conf);
+    conf
 }
 
 pub mod policy {
@@ -324,7 +364,7 @@ pub mod policy {
 
     #[derive(Debug, Default, Deserialize)]
     #[serde(transparent)]
-    pub(super) struct OrPolicy(Vec<super::ActionCriteria>);
+    pub(super) struct OrPolicy(pub(super) Vec<super::ActionCriteria>);
 
     impl OrPolicy {
         pub fn extract_emails(&self, hash_set: &mut HashSet<String>) {
@@ -339,7 +379,7 @@ pub mod policy {
     }
 
     #[derive(Debug, Default, Deserialize)]
-    pub(super) struct NorPolicy(Vec<super::ActionCriteria>);
+    pub(super) struct NorPolicy(pub(super) Vec<super::ActionCriteria>);
 
     impl NorPolicy {
         pub fn extract_emails(&self, hash_set: &mut HashSet<String>) {
@@ -354,7 +394,7 @@ pub mod policy {
     }
 
     #[derive(Debug, Default, Deserialize)]
-    pub(super) struct AndPolicy(Vec<super::ActionCriteria>);
+    pub(super) struct AndPolicy(pub(super) Vec<super::ActionCriteria>);
 
     impl AndPolicy {
         pub fn extract_emails(&self, hash_set: &mut HashSet<String>) {
@@ -369,7 +409,7 @@ pub mod policy {
     }
 
     #[derive(Debug, Default, Deserialize)]
-    pub(super) struct NotPolicy(Vec<super::ActionCriteria>);
+    pub(super) struct NotPolicy(pub(super) Vec<super::ActionCriteria>);
 
     impl NotPolicy {
         pub fn extract_emails(&self, hash_set: &mut HashSet<String>) {
