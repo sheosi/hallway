@@ -176,7 +176,7 @@ pub struct UserDataRender {
 }
 
 mod collections {
-    use crate::{config, consts, pomerium};
+    use crate::{config::{self, RouteData}, consts, pomerium};
     use std::{
         collections::{HashMap, HashSet},
         sync::Arc,
@@ -202,18 +202,28 @@ mod collections {
             email: &str,
             policy_holder: &PolicyHolder,
         ) -> Vec<Arc<config::Route>> {
+            fn check_route(email: &str, policy_holder: &PolicyHolder, r_data: &RouteData) -> bool {
+                match &r_data {
+                    RouteData::Path(path) => {
+                        let res = if let Some(policy) = policy_holder.get(&path){
+                            policy.check_authorized(email)
+                        }
+                        else {
+                            warn!("Path {} is invalid", &path);
+                            false
+                        };
+                        trace!(route = path, email = email, authed = res);
+                        res
+                    }
+                    RouteData::Group(group) => {
+                        group.iter().any(|r|check_route(email, policy_holder, &r.data))
+                    }
+                }
+            }
             self.routes
                 .iter()
                 .filter(|r| {
-                    let a = if let Some(policy) = policy_holder.get(&r.path){
-                        policy.check_authorized(email)
-                    }
-                    else {
-                        warn!("Path {} is invalid", &r.path);
-                        false
-                    };
-                    trace!(route = r.path, email = email, authed = a);
-                    a
+                    check_route(email, policy_holder, &r.data)
                 })
                 .cloned()
                 .collect()

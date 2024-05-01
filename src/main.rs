@@ -32,11 +32,8 @@ mod config {
     #[derive(Debug, Deserialize, Clone, Serialize)]
     pub struct Route {
         pub icon: String,
-        pub path: String,
         pub label: String,
-
-        #[serde(default)]
-        pub accessible_routes: Vec<Route>,
+        pub data: RouteData,
 
         #[serde(default = "defaults::button_color")]
         pub button_color: String,
@@ -47,6 +44,13 @@ mod config {
 
         #[serde(skip_deserializing)]
         pub is_group: bool,
+    }
+
+    #[derive(Debug, Deserialize, Clone, Serialize)]
+    #[serde(untagged)]
+    pub enum RouteData {
+        Path(String),
+        Group(Vec<Route>)
     }
 
     #[derive(Debug, Deserialize)]
@@ -64,8 +68,13 @@ mod config {
         fn fill_in_internals(routes: &mut [Route]) {
             routes.iter_mut().for_each(|route|{
                 route.escaped_label = route.label.replace(' ', "_").replace('.', "_");
-                route.is_group = !route.accessible_routes.is_empty();
-                fill_in_internals(&mut route.accessible_routes);
+                match  &mut route.data {
+                    RouteData::Path(_) => route.is_group = false,
+                    RouteData::Group(group) => {
+                        route.is_group = true;
+                        fill_in_internals(group);
+                    }
+                }
             })
         }
 
