@@ -4,7 +4,7 @@ use reqwest::blocking::get;
 
 const BASE_URL: &str = "https://cdn3.iconfinder.com/data/icons/feather-5/24";
 const SIZE: &str = "128";
-const ICONS: [&str;8] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home"];
+const ICONS: [&str;9] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders"];
 
 fn download_icon_png(name: &str) {
     let mut resp = get(format!("{BASE_URL}/{name}-{SIZE}.png")).unwrap();

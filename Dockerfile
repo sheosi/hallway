@@ -27,7 +27,7 @@ ARG APP=/usr/src/app
 
 
 RUN apt-get update \
-    && apt-get install -y ca-certificates tzdata libssl3 \
+    && apt-get install -y ca-certificates tzdata libssl3 webp \
     && rm -rf /var/lib/apt/lists/*
 
 ENV TZ=Etc/UTC \
