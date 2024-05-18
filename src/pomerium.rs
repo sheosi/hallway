@@ -14,6 +14,12 @@ pub struct Route {
     pub from: String,
 
     #[serde(default)]
+    pub prefix: String,
+
+    #[serde(default)]
+    pub path: String,
+    
+    #[serde(default)]
     pub allow_public_unauthenticated_access: bool,
 
     #[serde(default)]

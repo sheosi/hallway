@@ -234,6 +234,12 @@ mod collections {
 
     impl PolicyHolder {
         pub fn from(pomerium_data: Vec<pomerium::Route>) -> Self {
+            fn make_url(mut from: String, path: &String, prefix: &String) -> String {
+                from.push_str(&path);
+                from.push_str(&prefix);
+                from
+            }
+
             let dict = pomerium_data
                 .into_iter()
                 .map(|r| { 
@@ -243,7 +249,7 @@ mod collections {
                     else {
                         r.policy
                     };
-                    (r.from, policy)
+                    (make_url(r.from, &r.path, &r.prefix), policy)
                 })
                 .collect();
             Self {
