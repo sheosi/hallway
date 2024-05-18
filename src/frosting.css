@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @font-face {
     font-display: swap;
     font-family: SoraVariable;
@@ -147,12 +151,80 @@ p {
     margin: 0;
 }
 
- div {
-     display: flex;
-     gap: 0.9em;
- }
+div {
+    display: flex;
+    gap: 0.9em;
+}
 
- a {
-     text-decoration: none;
-     color: black;
- }
+a {
+    text-decoration: none;
+    color: black;
+}
+
+/*index.html styles*/
+.big-button {
+    flex-direction: column;
+    align-items: center;
+    display:inline-flex;
+    gap: 0.5em;
+    opacity: 0.65;
+}
+.big-button button {
+    height: 8.7em;
+    width: 8.7em;
+    transition: background-color 0.8s, transform 0.65s;
+    animation-timing-function: ease-out;
+}
+.big-button:hover button {
+    transform: translate(0,-0.7em);
+}
+.big-button button img {
+    max-height: 6.5em;
+    max-width: 6.5em;
+    transition: filter 0.8s;
+    animation-timing-function: ease-out;
+    margin:auto;
+}
+.big-button:hover button img {
+    filter: saturate(140%);
+}
+
+.big-button > p {
+    color: rgba(40, 40, 40, 180);
+    filter: drop-shadow(3px 3px 5px #FFFFFF);
+    transition: color 0.8s, transform 0.65s;
+    animation-timing-function: ease-out;
+    font-size: 19px;
+}
+
+.big-button:hover > p {
+    color: rgba(40, 40, 40, 255);
+    transform: translate(0, -0.4em);
+}
+.popup{
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.popup.shown {
+    display:block;
+}
+.popup.shown.start {
+    -webkit-animation: show 0.5s 1;
+    animation: show 0.5s 1;
+}
+.popup.shown.end {
+    -webkit-animation: hide 0.5s 1;
+    animation: hide 0.5s 1;
+}
+
+@keyframes show {
+    0% { opacity: 0; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+}
+@keyframes hide {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.2); }
+}
