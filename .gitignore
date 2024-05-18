@@ -1,3 +1,4 @@
 /target
 html_files/assets/*.webp
 html_files/assets/styles.css
+html_files/*.html

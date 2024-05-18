@@ -1,5 +1,6 @@
 use std::{fs::File, io::{Read, Write}, path::Path, process::Command};
 
+use minify_html::{Cfg, minify};
 use reqwest::blocking::get;
 
 const BASE_URL: &str = "https://cdn3.iconfinder.com/data/icons/feather-5/24";
@@ -62,6 +63,47 @@ fn download_tailwind() {
     }
 }
 
+fn execute_tailwind() {
+    let status = std::process::Command::new(get_tailwind_dest())
+    .args(["-i", "src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).status();
+    if !status.unwrap().success() {
+        println!("Tailwind execution failed");
+    }
+}
+
+fn minify_html(cfg: &Cfg, in_path: &str, out_path: &str) {
+    let mut html_file_in = std::fs::File::open(in_path).unwrap();
+
+    let mut html_file_in_data = String::new();
+    html_file_in.read_to_string(&mut html_file_in_data).unwrap();
+
+    let minified = minify(html_file_in_data.as_bytes(), &cfg);
+
+    let mut html_file_out = std::fs::File::create(out_path).unwrap();
+    html_file_out.write(&minified).unwrap();
+}
+
+fn minify_all_html() {
+    let mut cfg = Cfg::new();
+    cfg.minify_js = true;
+    cfg.minify_css = true;
+    let out_dir = std::path::Path::new("html_files");
+    println!("sikdiks");
+    for entry in std::fs::read_dir("html_src").unwrap() {
+        let entry = entry.unwrap();
+        let a = out_dir.join(entry.file_name());
+        let f = a.to_str().unwrap();
+        if entry.file_type().unwrap().is_file() && 
+           entry.path().extension().unwrap() == "html" { 
+            println!("cargo:warning=Doing {f}");
+            minify_html(&cfg,
+                entry.path().to_str().unwrap(),
+                out_dir.join(entry.file_name()).to_str().unwrap()
+            );
+        }
+    }
+}
+
 fn main() {
     // Download icons
     for icon in ICONS {
@@ -70,14 +112,13 @@ fn main() {
         }
     }
 
+    // Tailwind
     download_tailwind();
+    execute_tailwind();
 
-    let status = std::process::Command::new(get_tailwind_dest())
-    .args(["-i", "src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).status();
-    if !status.unwrap().success() {
-        println!("Tailwind execution failed");
-    }
+    minify_all_html();
 
+    // Tell cargo to keep an eye on files
     println!("cargo:rerun-if-changed=tailwind.config.js");
 	println!("cargo:rerun-if-changed=html_src");
 
