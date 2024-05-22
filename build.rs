@@ -6,13 +6,17 @@ use reqwest::blocking::get;
 const BASE_URL: &str = "https://cdn3.iconfinder.com/data/icons/feather-5/24";
 const SIZE: &str = "128";
 const ICONS: [&str;9] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders"];
-
+const RETRIES: u8 = 3;
 
 fn download_file(url: String, out_path: &str) {
     let mut resp = get(url).unwrap();
     let mut image_buff = Vec::new();
-    if resp.status().is_success() {
-        resp.read_to_end(&mut image_buff).unwrap();
+    
+    for _ in [0..RETRIES]{
+        if resp.status().is_success() {
+            resp.read_to_end(&mut image_buff).unwrap();
+            break;
+        }
     }
     let mut out_file = File::create(out_path).unwrap();
     out_file.write_all(&image_buff).unwrap();
@@ -58,7 +62,7 @@ fn download_tailwind() {
 
         let status = std::process::Command::new("chmod").args(["+x", &tailwind_dest]).status();
         if !status.unwrap().success() {
-            println!("Couldn't mark tailwind as executable");
+            println!("cargo:warning=Couldn't mark tailwind as executable");
         }
     }
 }
@@ -67,7 +71,7 @@ fn execute_tailwind() {
     let status = std::process::Command::new(get_tailwind_dest())
     .args(["-i", "src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).status();
     if !status.unwrap().success() {
-        println!("Tailwind execution failed");
+        println!("cargo:warning=Tailwind execution failed");
     }
 }
 
@@ -88,14 +92,12 @@ fn minify_all_html() {
     cfg.minify_js = true;
     cfg.minify_css = true;
     let out_dir = std::path::Path::new("html_files");
-    println!("sikdiks");
     for entry in std::fs::read_dir("html_src").unwrap() {
         let entry = entry.unwrap();
         let a = out_dir.join(entry.file_name());
         let f = a.to_str().unwrap();
         if entry.file_type().unwrap().is_file() && 
            entry.path().extension().unwrap() == "html" { 
-            println!("cargo:warning=Doing {f}");
             minify_html(&cfg,
                 entry.path().to_str().unwrap(),
                 out_dir.join(entry.file_name()).to_str().unwrap()
@@ -117,6 +119,10 @@ fn main() {
     execute_tailwind();
 
     minify_all_html();
+
+    // Obtain instant.page
+
+    download_file("https://instant.page/5.2.0".to_string(), "html_files/assets/instantpage.js");
 
     // Tell cargo to keep an eye on files
     println!("cargo:rerun-if-changed=tailwind.config.js");
