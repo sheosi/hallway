@@ -1,4 +1,6 @@
-use std::{str::FromStr, thread, time::Duration};
+use std::{str::FromStr, time::Duration};
+
+use crate::utils;
 
 use aliri::{
     jwa,
@@ -64,8 +66,8 @@ pub struct JwtDecoder {
 
 
 impl JwtDecoder {
-    pub fn new(domain_name: &str) -> Self {
-        let keys = Self::get_keys(domain_name);
+    pub fn new(domain_name: &str, jwks_route: &str) -> Self {
+        let keys = utils::get_json(jwks_route);
 
         let validator = jwt::CoreValidator::default()
             .ignore_expiration()
@@ -75,35 +77,10 @@ impl JwtDecoder {
             .check_expiration()
             .with_leeway(Duration::from_secs(60));
 
+     
+     
         Self { validator, keys }
     }
-
-    fn get_keys_body(domain_name: &str) -> reqwest::blocking::Response {
-        let mut resp = reqwest::blocking::get(format!(
-            "https://{}/.well-known/pomerium/jwks.json",
-            domain_name
-        ));
-
-        while resp.is_err() {
-            thread::sleep(std::time::Duration::from_secs(10));
-            resp = reqwest::blocking::get(format!(
-                "https://{}/.well-known/pomerium/jwks.json",
-                domain_name
-            ));
-        }
-        resp.unwrap() // This unwrap is fine
-    }
-
-    fn get_keys(domain_name: &str) -> aliri::Jwks {
-        let mut json = Self::get_keys_body(domain_name).json();
-        while json.is_err() {
-            thread::sleep(std::time::Duration::from_secs(10));
-            json = Self::get_keys_body(domain_name).json();
-        }
-
-        json.unwrap() // This unwrap is fine
-    }
-
     #[instrument]
     pub fn decode(&self, jwt: Jwt) -> Option<crate::common::CurrentUserData> {
         trace!("Decomposing");
@@ -126,6 +103,7 @@ impl JwtDecoder {
         Some(crate::common::CurrentUserData {
             email: claims.email.clone(),
             name: claims.name.clone(),
+            picture: None // Not yet supported
         })
     }
 }

@@ -5,7 +5,7 @@
         <title>Welcome to LilyLab!</title>
         <link href="assets/styles.css" rel="stylesheet" type="text/css" media="all">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="//instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxEtvFPiQYbXWUorga2aqZJ0z"/>
+        <script src="assets/instantpage.js" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxEtvFPiQYbXWUorga2aqZJ0z"/>
 
         <script>
             function ready(fn) {
@@ -63,20 +63,20 @@
             });
         </script>
     </head>
-    <body style="background-image: url('assets/{{background}}');" >
+    <body style="background-image: url('assets/user.background}}');" >
         <div class="card vertical fill responsive-width" style="min-height:80%;margin: auto">
             <div class="centered-childs">
                 <img style="min-width: 2em; width: 20%; max-width:4.5em" src="assets/lilylab-logo.webp" alt=""/>
-                <h1>Welcome to <span style="color: rgba(150, 150, 150, 0.65);">LilyLab</span>, {{name}}</h1>
-                <button class="cute-button last"><a href="/.pomerium/sign_out"><img src="assets/log-out.webp" alt=""/><p>Log Out</p></a></button>
+                <h1>Welcome to <span style="color: rgba(150, 150, 150, 0.65);">LilyLab</span>, {{user.name}}</h1>
+                <button class="cute-button last"><a href="{{global.sign_out_url}}"><img src="assets/log-out.webp" alt=""/><p>Log Out</p></a></button>
             </div>
             <br><br>
             <div class="horizontal centered-childs wrap" style="width: 100%;display: grid;row-gap: 4em;column-gap: 1em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));">
-                {{#each accessible_routes}}
+                {{#each user.accessible_routes}}
                 {{#if this.is_group}}
-                <div data-popup="popup-{{this.escaped_label}}" class="big-button popup-button" style="--button-color:{{button_color}}">
+                <div data-popup="popup-{{this.escaped_label}}" class="big-button popup-button" style="--button-color:{{this.button_color}}">
                 {{else}}
-                <a href="{{this.data}}" class="big-button" style="--button-color:{{button_color}}">
+                <a href="{{this.data}}" class="big-button" style="--button-color:{{this.button_color}}">
                 {{/if}}
                     <button class="cute-button"><img src="assets/{{this.icon}}" alt=""/></button>
                     <p>{{this.label}}</p>
@@ -87,7 +87,7 @@
                     style="width:32em;display: grid;gap: 2em;grid-auto-rows: 9em;grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));">
 
                     {{#each this.data}}
-                        <a href="{{this.data}}" class="big-button" style="--button-color:{{button_color}}">
+                        <a href="{{this.data}}" class="big-button" style="--button-color:{{this.button_color}}">
                             <button class="cute-button"><img src="assets/{{this.icon}}" alt="" /></button>
                             <p>{{this.label}}</p>
                         </a>

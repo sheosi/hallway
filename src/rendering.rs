@@ -36,21 +36,29 @@ impl RenderCache {
 
     fn get_or_render(
         &mut self,
-        data: &UserDataRender,
+        user_data: &UserDataRender,
+        global_data: &GlobalData,
         handlebars: &Arc<Handlebars>,
     ) -> String {
+        #[derive(Clone, Serialize)]
+        struct RenderData<'a> {
+            user: &'a UserDataRender,
+            global: &'a GlobalData
+        }
+
         let cached = self
             .dict
             .read()
             .unwrap()
-            .get(&data.email)
+            .get(&user_data.email)
             .map(|i| i.render.clone());
 
         cached.unwrap_or_else(|| {
             trace!("Start rendering");
-            let email = data.email.clone();
+            let email = user_data.email.clone();
 
-            let render = handlebars.render("index.html", data).expect("Failed to render index file");
+            let data =  RenderData{user: user_data, global: global_data};
+            let render = handlebars.render("index.html", &data).expect("Failed to render index file");
 
             let item = RenderCacheItem {
                 render: render.clone(),
@@ -85,11 +93,17 @@ impl RenderCache {
     }
 }
 
+#[derive(Clone, Serialize)]
+pub struct GlobalData {
+    pub sign_out_url: String
+}
+
 #[derive(Clone)]
 pub struct Renderer<'a> {
     handlebars: Arc<Handlebars<'a>>,
     render_cache: RenderCache,
     user_data_holder: collections::UserDataHolder,
+    global_data: Arc<GlobalData>
 }
 
 impl<'a> Renderer<'a> {
@@ -97,6 +111,7 @@ impl<'a> Renderer<'a> {
         conf_routes: Vec<crate::config::Route>,
         pomerium_data: Vec<pomerium::Route>,
         index_path: &Path,
+        global_data: Arc<GlobalData>
     ) -> Self {
         let mut handlebars = Handlebars::new();
         handlebars
@@ -113,6 +128,7 @@ impl<'a> Renderer<'a> {
             handlebars: Arc::new(handlebars),
             render_cache: RenderCache::new(),
             user_data_holder,
+            global_data
         }
     }
 
@@ -120,7 +136,7 @@ impl<'a> Renderer<'a> {
         let user_data = self.user_data_holder.get_render(&user_data);
         trace!("Got user data");
         self.render_cache
-            .get_or_render(&user_data, &self.handlebars)
+            .get_or_render(&user_data, &self.global_data, &self.handlebars)
     }
 
     pub fn extract_emails(pomerium_data: &[pomerium::Route]) -> HashSet<String> {
@@ -133,7 +149,7 @@ impl<'a> Renderer<'a> {
     }
 }
 
-pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>) -> (String, StatusCode) {
+pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>, global_data: &GlobalData) -> (String, StatusCode) {
     fn load_html_and_render<P: AsRef<Path>>(
         path: P,
         handlebars: &Arc<Handlebars>,

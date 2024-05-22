@@ -94,8 +94,6 @@ fn minify_all_html() {
     let out_dir = std::path::Path::new("html_files");
     for entry in std::fs::read_dir("html_src").unwrap() {
         let entry = entry.unwrap();
-        let a = out_dir.join(entry.file_name());
-        let f = a.to_str().unwrap();
         if entry.file_type().unwrap().is_file() && 
            entry.path().extension().unwrap() == "html" { 
             minify_html(&cfg,

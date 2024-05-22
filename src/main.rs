@@ -8,6 +8,7 @@ mod consts;
 mod jwt;
 mod pomerium;
 mod rendering;
+mod utils;
 
 #[cfg(test)]
 mod tests;
@@ -16,6 +17,7 @@ mod common {
     pub struct CurrentUserData {
         pub email: String,
         pub name: String,
+        pub picture: Option<String>
     }
 }
 
@@ -154,9 +156,26 @@ mod filters {
         warp::any().map(||{
             crate::common::CurrentUserData { 
                 email: consts::defaults::debug::EMAIL.to_string(), 
-                name: consts::defaults::debug::NAME.to_string()
+                name: consts::defaults::debug::NAME.to_string(),
+                picture: None
             }
         })
+    }
+}
+
+mod pomerium_routes {
+    use serde::Deserialize;
+
+    use crate::utils::get_json;
+
+    #[derive(Clone, Debug, Deserialize)]
+    pub struct KnownRoutes {
+        pub frontchannel_logout_uri: String,
+        pub jwks_uri: String
+    }
+
+    pub fn obtain_known(domain: &str) -> KnownRoutes {
+        get_json(&format!("{}/.well-known/pomerium", domain))
     }
 }
 
@@ -183,19 +202,24 @@ async fn main() {
     let static_file =
         |path: &'static str| warp::path(path).and(warp::fs::file(html_files.join(path)));
 
-    let (renderer, jwt_decoder) = {
+    let (renderer, jwt_decoder, global_data) = {
         let conf_dir = Path::new(consts::paths::get_conf_dir());
         let config = config::load(conf_dir.join("config.toml"));
         let pomerium_conf = pomerium::load_conf(conf_dir.join("pomerium.yaml"));
 
-        let jwt_decoder = Arc::new(jwt::JwtDecoder::new(&config.domain.name));
+        let known_routes = pomerium_routes::obtain_known(&config.domain.name);
+        let jwt_decoder = Arc::new(jwt::JwtDecoder::new(&config.domain.name, &known_routes.jwks_uri));
+        let global_data = Arc::new(rendering::GlobalData { 
+                sign_out_url: known_routes.frontchannel_logout_uri
+            });
         let renderer = rendering::Renderer::from(
             config.routes,
             pomerium_conf.routes,
             &html_files.join("index.html"),
+            global_data.clone()
         );
 
-        (renderer, jwt_decoder)
+        (renderer, jwt_decoder, global_data)
     };
 
     let renderer_clone = renderer.clone();
@@ -231,13 +255,16 @@ async fn main() {
     let app = index
         .or(assets)
         .or(redirect_index)
-        .recover(|err| async move {
-            let hb = Arc::new(Handlebars::new());
-            let (html, status_code) = rendering::render_error(err, &hb);
-            Ok::<_, Infallible>(warp::reply::with_status(
-                warp::reply::html(html),
-                status_code,
-            ))
+        .recover( move |err| {
+            let global_data = global_data.clone();
+            async move {
+                let hb = Arc::new(Handlebars::new());
+                let (html, status_code) = rendering::render_error(err, &hb, &global_data);
+                Ok::<_, Infallible>(warp::reply::with_status(
+                    warp::reply::html(html),
+                    status_code,
+                ))
+            }
         })
         .with(warp::filters::compression::brotli());
 
