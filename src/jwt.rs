@@ -67,7 +67,7 @@ pub struct JwtDecoder {
 
 impl JwtDecoder {
     pub fn new(domain_name: &str, jwks_route: &str) -> Self {
-        let keys = utils::get_json(jwks_route);
+        let keys = Self::get_jwks(jwks_route);
 
         let validator = jwt::CoreValidator::default()
             .ignore_expiration()
@@ -105,5 +105,16 @@ impl JwtDecoder {
             name: claims.name.clone(),
             picture: None // Not yet supported
         })
+    }
+
+    #[cfg(feature="container")]
+    fn get_jwks(jwks_route: &str) -> Jwks {
+        utils::get_json(jwks_route)
+    }
+
+    // Dummy version for testing
+    #[cfg(not(feature="container"))]
+    fn get_jwks(_: &str) -> Jwks {
+        Jwks::default()
     }
 }

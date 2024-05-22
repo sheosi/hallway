@@ -68,10 +68,13 @@ fn download_tailwind() {
 }
 
 fn execute_tailwind() {
-    let status = std::process::Command::new(get_tailwind_dest())
-    .args(["-i", "src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).status();
-    if !status.unwrap().success() {
-        println!("cargo:warning=Tailwind execution failed");
+    let mut child = std::process::Command::new(get_tailwind_dest())
+    .args(["-i", "html_src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).spawn().unwrap();
+    if !child.wait().unwrap().success() {
+        println!("cargo:error=Tailwind execution failed");
+
+        let mut err = String::new();
+        child.stderr.unwrap().read_to_string(&mut err).unwrap();
     }
 }
 

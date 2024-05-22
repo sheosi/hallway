@@ -174,8 +174,17 @@ mod pomerium_routes {
         pub jwks_uri: String
     }
 
+    #[cfg(feature="container")]
     pub fn obtain_known(domain: &str) -> KnownRoutes {
         get_json(&format!("{}/.well-known/pomerium", domain))
+    }
+
+    #[cfg(not(feature="container"))]
+    pub fn obtain_known(_: &str) -> KnownRoutes {
+        KnownRoutes {
+            frontchannel_logout_uri: "/test/logout".to_string(),
+            jwks_uri: "/test/jwks.json".to_string(),
+        }
     }
 }
 

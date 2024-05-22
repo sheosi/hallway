@@ -184,6 +184,7 @@ pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>, global_dat
 pub struct UserDataRender {
     name: String,
     email: String,
+    picture: Option<String>,
     background: String,
     accessible_routes: Vec<crate::config::Route>,
 }
@@ -308,7 +309,6 @@ mod collections {
             }
         }
 
-        /// Will get none if the user is not registered
         pub fn get_render(
             &self,
             user: &crate::common::CurrentUserData,
@@ -317,6 +317,7 @@ mod collections {
                 name: user.name.clone(),
                 email: user.email.clone(),
                 background: consts::defaults::BACKGROUND.to_string(),
+                picture: user.picture.clone(),
                 accessible_routes: u
                     .accessible_routes
                     .iter()
@@ -329,6 +330,7 @@ mod collections {
                     name: user.name.clone(),
                     email: user.email.clone(),
                     background: consts::defaults::BACKGROUND.to_string(),
+                    picture: None,
                     accessible_routes: self
                         .public_urls
                         .iter()
