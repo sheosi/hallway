@@ -30,6 +30,7 @@ fn transform_to_webp(name: &str) {
 fn download_to_webp(name: &str) {
     download_file(format!("{BASE_URL}/{name}-{SIZE}.png"), "temp.png");
     transform_to_webp(name);
+    std::fs::remove_file("temp.png").unwrap();
 }
 
 fn get_arch() -> &'static str {
