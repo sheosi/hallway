@@ -1,0 +1,52 @@
+[domain]
+name = "testing.com"
+
+[[routes]]
+icon = "home.webp"
+label = "Route 1"
+data = "https://route1.testing.com"
+
+[[routes]]
+icon = "shield.webp"
+label = "Route 2"
+data = "https://route2.testing.com"
+
+[[routes]]
+icon = "image.webp"
+label = "Route 3"
+data = "https://route3.testing.com"
+
+[[routes]]
+icon = "folder.webp"
+label = "Route 5"
+data = "https://route5.testing.com"
+
+[[routes]]
+icon = "code.webp"
+label = "Route 6"
+data = "https://route6.testing.com"
+
+[[routes]]
+icon = "image.webp"
+label = "Route 7"
+data = "https://route7.testing.com"
+
+[[routes]]
+icon = "shield.webp"
+label = "Route 8"
+data = "https://route8.testing.com"
+
+[[routes]]
+icon = "folder.webp"
+label = "Route 9"
+data = "https://route9.testing.com"
+
+[[routes]]
+icon = "folder.webp"
+label = "Route 10"
+data = "https://route10.testing.com"
+
+[[routes]]
+icon = "shield.webp"
+label = "Group..."
+data = [{icon="folder.webp", label = "Item1", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 2", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 3", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 4", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 5", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 6", data = "https://route9.testing.com"},{icon="folder.webp", label = "Item 7", data = "https://route9.testing.com"}]

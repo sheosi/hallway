@@ -5,7 +5,7 @@ pub mod defaults {
     pub const MAX_TIME: u64 = 2 * 24 * 60 * 60; // 2 days max for cache
     pub const BACKGROUND: &str = "background.avif";
 
-    #[cfg(not(feature="container"))]
+    #[cfg(not(feature = "container"))]
     pub mod debug {
         pub const EMAIL: &str = "testuser@testmail.com";
         pub const NAME: &str = "Test User";
@@ -31,7 +31,7 @@ pub mod time {
 }
 
 pub mod paths {
-    const CURRENT_DIR: &str = "./";
+    const TESTING_DIR: &str = "./testing";
 
     pub const fn get_conf_dir() -> &'static str {
         const CONTAINER_CONF: &str = "/config";
@@ -39,7 +39,7 @@ pub mod paths {
         if cfg!(feature = "container") {
             CONTAINER_CONF
         } else {
-            CURRENT_DIR
+            TESTING_DIR
         }
     }
 

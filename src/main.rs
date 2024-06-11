@@ -9,7 +9,7 @@ mod jwt;
 mod pomerium;
 mod rendering;
 
-#[cfg(feature="container")]
+#[cfg(feature = "container")]
 mod utils;
 
 #[cfg(test)]
@@ -100,7 +100,7 @@ mod filters {
     #[cfg(feature = "container")]
     use warp::reject;
 
-    #[cfg(not(feature="container"))]
+    #[cfg(not(feature = "container"))]
     use crate::consts;
 
     #[cfg(feature = "container")]
@@ -173,7 +173,7 @@ mod filters {
 mod pomerium_routes {
     use serde::Deserialize;
 
-    #[cfg(feature="container")]
+    #[cfg(feature = "container")]
     use crate::utils::get_json;
 
     #[derive(Clone, Debug, Deserialize)]
@@ -182,12 +182,12 @@ mod pomerium_routes {
         pub jwks_uri: String
     }
 
-    #[cfg(feature="container")]
+    #[cfg(feature = "container")]
     pub fn obtain_known(domain: &str) -> KnownRoutes {
         get_json(&format!("{}/.well-known/pomerium", domain))
     }
 
-    #[cfg(not(feature="container"))]
+    #[cfg(not(feature = "container"))]
     pub fn obtain_known(_: &str) -> KnownRoutes {
         KnownRoutes {
             frontchannel_logout_uri: "/test/logout".to_string(),

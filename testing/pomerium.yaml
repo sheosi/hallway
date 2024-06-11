@@ -1,0 +1,101 @@
+authenticate_service_url: https://authentication.testing.com
+autocert: true
+autocert_email: testuser@testmail.com
+cookie_domain: testing.com
+cookie_secret: sidossioudnhsidusnduisnd
+http_redirect_addr: :80
+idp_client_id: sopjpoijsopaspajs
+idp_client_secret: okmdosodsmdsmpsmxoxm
+idp_provider: someone
+log_level: info
+routes:
+- allow_public_unauthenticated_access: true
+  allow_websockets: true
+  from: https://route1.testing.com
+  policy: []
+  to: http://127.0.0.1:8123
+- allow_websockets: true
+  from: https://route2.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  set_request_headers:
+    Authorization: Basic dssdsizponsoinxomzpsza=oz
+  to: http://127.0.0.1:3123
+- allow_public_unauthenticated_access: true
+  allow_websockets: true
+  from: https://route3.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  timeout: 5h
+  to: http://127.0.0.1:2698
+- from: https://route5.testing.com
+  pass_identity_headers: true
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  timeout: 5h
+  to: http://127.0.0.1:673
+- allow_websockets: true
+  from: https://route6.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  to: http://127.0.0.1:4059
+- from: https://testing.com
+  pass_identity_headers: true
+  policy:
+  - allow:
+      or:
+      - email:
+          is: anotheruser@testmail.com
+      - email:
+          is: testuser@testmail.com
+  to: http://127.0.0.1:8970
+- allow_public_unauthenticated_access: true
+  allow_websockets: true
+  from: https://route7.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  to: http://127.0.0.1:4095
+- from: https://route8.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  to: http://127.0.0.1:3409
+- allow_public_unauthenticated_access: true
+  from: https://route9.testing.com
+  pass_identity_headers: true
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  timeout: 5h
+  to: http://127.0.0.1:1234
+- allow_public_unauthenticated_access: true
+  from: https://route10.testing.com
+  policy:
+  - allow:
+      or:
+      - email:
+          is: testuser@testmail.com
+  timeout: 5h
+  to: http://127.0.0.1:2020
+signing_key: isndnsinsidsd
+timeout_idle: 0s
+timeout_read: 5h
