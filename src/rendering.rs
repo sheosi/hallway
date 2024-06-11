@@ -153,7 +153,7 @@ pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>, global_dat
     fn load_html_and_render<P: AsRef<Path>>(
         path: P,
         handlebars: &Arc<Handlebars>,
-        data: &HashMap<String, String>,
+        data: &GlobalData,
     ) -> String {
         let html = std::fs::read_to_string(path.as_ref()).unwrap_or_else(|e| panic!("Couldn't read '{}': {}", path.as_ref().display(), e));
         handlebars.render_template(&html, &data).unwrap_or_else(|e|{error!("Can't render page: {}", e); "Sorry we had an error!".to_string()})
@@ -164,7 +164,7 @@ pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>, global_dat
             load_html_and_render(
                 Path::new(consts::paths::get_html_files_dir()).join("404.html"),
                 handlebars,
-                &HashMap::new(),
+                global_data,
             ),
             StatusCode::NOT_FOUND,
         )
@@ -173,7 +173,7 @@ pub fn render_error(err: Rejection, handlebars: &Arc<Handlebars<'_>>, global_dat
             load_html_and_render(
                 Path::new(consts::paths::get_html_files_dir()).join("50x.html"),
                 handlebars,
-                &HashMap::new(),
+                &global_data,
             ),
             StatusCode::INTERNAL_SERVER_ERROR,
         )

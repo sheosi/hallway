@@ -8,6 +8,8 @@ mod consts;
 mod jwt;
 mod pomerium;
 mod rendering;
+
+#[cfg(feature="container")]
 mod utils;
 
 #[cfg(test)]
@@ -94,16 +96,21 @@ mod filters {
     use aliri::Jwt;
     #[cfg(feature = "container")]
     use tracing::trace;
-    use warp::{http::HeaderValue, hyper::header, Filter, Rejection, reject};
+    use warp::{http::HeaderValue, hyper::header, Filter, Rejection};
+    #[cfg(feature = "container")]
+    use warp::reject;
 
+    #[cfg(not(feature="container"))]
     use crate::consts;
 
     #[cfg(feature = "container")]
     use crate::jwt::JwtDecoder;
 
+    #[cfg(feature = "container")]
     #[derive(Debug)]
     struct MalformedJwt;
 
+    #[cfg(feature = "container")]
     impl reject::Reject for  MalformedJwt{}
 
     pub fn disable_cache() -> warp::reply::with::WithHeaders {
@@ -166,6 +173,7 @@ mod filters {
 mod pomerium_routes {
     use serde::Deserialize;
 
+    #[cfg(feature="container")]
     use crate::utils::get_json;
 
     #[derive(Clone, Debug, Deserialize)]

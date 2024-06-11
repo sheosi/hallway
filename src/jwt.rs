@@ -1,5 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
+#[cfg(feature = "container")]
 use crate::utils;
 
 use aliri::{
@@ -59,8 +60,12 @@ impl CoreClaims for Oauth2Claims {
 }
 
 #[derive(Debug)]
+// On testing mode validator and keys are never used, that's alright
 pub struct JwtDecoder {
+    #[allow(dead_code)]
     validator: jwt::CoreValidator,
+
+    #[allow(dead_code)]
     keys: Jwks,
 }
 
