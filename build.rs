@@ -5,7 +5,7 @@ use reqwest::blocking::get;
 
 const BASE_URL: &str = "https://cdn3.iconfinder.com/data/icons/feather-5/24";
 const SIZE: &str = "128";
-const ICONS: [&str;9] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders"];
+const ICONS: [&str;9] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders", "film"];
 const RETRIES: u8 = 3;
 
 fn download_file(url: String, out_path: &str) {
