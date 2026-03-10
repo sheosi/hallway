@@ -311,11 +311,13 @@ async fn main() {
 
     // spawn proxy server
     warp::serve(app)
-        /*.graceful(async move {
+        .bind((serve_address, http_port))
+        .await
+        .graceful(async move {
             tokio::signal::ctrl_c()
                 .await
                 .expect("failed to listen to shutdown signal");
-        })*/
-        .run((serve_address, http_port))
-        .await
+        })
+        .run()
+        .await;
 }
