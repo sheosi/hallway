@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 # Web
 warp = {version = "0.3", features = ["compression-brotli"]}
-tokio = {version = "1.37", features=["rt", "macros", "time"]}
+tokio = {version = "1.37", features=["rt", "macros", "time", "signal"]}
 
 # Config (own and pomerium)
 toml = "0.8"

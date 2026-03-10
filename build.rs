@@ -1,18 +1,25 @@
-use std::{fs::File, io::{Read, Write}, path::Path, process::Command};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+    process::Command,
+};
 
-use minify_html::{Cfg, minify};
+use minify_html::{minify, Cfg};
 use reqwest::blocking::get;
 
 const BASE_URL: &str = "https://cdn3.iconfinder.com/data/icons/feather-5/24";
 const SIZE: &str = "128";
-const ICONS: [&str;9] = ["cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders", "film"];
+const ICONS: [&str; 10] = [
+    "cloud", "shield", "code", "file", "folder", "log-out", "image", "home", "sliders", "film",
+];
 const RETRIES: u8 = 3;
 
 fn download_file(url: String, out_path: &str) {
     let mut resp = get(url).unwrap();
     let mut image_buff = Vec::new();
-    
-    for _ in [0..RETRIES]{
+
+    for _ in [0..RETRIES] {
         if resp.status().is_success() {
             resp.read_to_end(&mut image_buff).unwrap();
             break;
@@ -24,7 +31,10 @@ fn download_file(url: String, out_path: &str) {
 
 fn transform_to_webp(name: &str) {
     let out_name = format!("html_files/assets/{name}.webp");
-    Command::new("cwebp").args(["-q", "80", "temp.png", "-o", &out_name]).status().expect("Failed to call 'cwebp'");
+    Command::new("cwebp")
+        .args(["-q", "80", "temp.png", "-o", &out_name])
+        .status()
+        .expect("Failed to call 'cwebp'");
 }
 
 fn download_to_webp(name: &str) {
@@ -48,20 +58,23 @@ fn get_tailwind_dest() -> String {
 }
 
 fn download_tailwind() {
-    const BASE_URL_TAILWIND: &str = "https://github.com/tailwindlabs/tailwindcss/releases/latest/download";
+    const BASE_URL_TAILWIND: &str =
+        "https://github.com/tailwindlabs/tailwindcss/releases/latest/download";
     let tailwind_dest = get_tailwind_dest();
-    
+
     if !std::path::Path::new(&tailwind_dest).exists() {
         if !std::path::Path::new("target/deps").exists() {
             std::fs::create_dir("target/deps").unwrap();
         }
 
         download_file(
-            format!("{BASE_URL_TAILWIND}/{tailwind_dest}"), 
-            &tailwind_dest
+            format!("{BASE_URL_TAILWIND}/{tailwind_dest}"),
+            &tailwind_dest,
         );
 
-        let status = std::process::Command::new("chmod").args(["+x", &tailwind_dest]).status();
+        let status = std::process::Command::new("chmod")
+            .args(["+x", &tailwind_dest])
+            .status();
         if !status.unwrap().success() {
             println!("cargo:warning=Couldn't mark tailwind as executable");
         }
@@ -70,7 +83,15 @@ fn download_tailwind() {
 
 fn execute_tailwind() {
     let mut child = std::process::Command::new(get_tailwind_dest())
-    .args(["-i", "html_src/frosting.css", "-o", "html_files/assets/styles.css", "--minify"]).spawn().unwrap();
+        .args([
+            "-i",
+            "html_src/frosting.css",
+            "-o",
+            "html_files/assets/styles.css",
+            "--minify",
+        ])
+        .spawn()
+        .unwrap();
     if !child.wait().unwrap().success() {
         println!("cargo:error=Tailwind execution failed");
 
@@ -98,11 +119,11 @@ fn minify_all_html() {
     let out_dir = std::path::Path::new("html_files");
     for entry in std::fs::read_dir("html_src").unwrap() {
         let entry = entry.unwrap();
-        if entry.file_type().unwrap().is_file() && 
-           entry.path().extension().unwrap() == "html" { 
-            minify_html(&cfg,
+        if entry.file_type().unwrap().is_file() && entry.path().extension().unwrap() == "html" {
+            minify_html(
+                &cfg,
                 entry.path().to_str().unwrap(),
-                out_dir.join(entry.file_name()).to_str().unwrap()
+                out_dir.join(entry.file_name()).to_str().unwrap(),
             );
         }
     }
@@ -124,10 +145,13 @@ fn main() {
 
     // Obtain instant.page
 
-    download_file("https://instant.page/5.2.0".to_string(), "html_files/assets/instantpage.js");
+    download_file(
+        "https://instant.page/5.2.0".to_string(),
+        "html_files/assets/instantpage.js",
+    );
 
     // Tell cargo to keep an eye on files
     println!("cargo:rerun-if-changed=tailwind.config.js");
-	println!("cargo:rerun-if-changed=html_src");
-
+    println!("cargo:rerun-if-changed=html_src");
 }
+

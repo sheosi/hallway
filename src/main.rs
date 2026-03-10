@@ -19,7 +19,7 @@ mod common {
     pub struct CurrentUserData {
         pub email: String,
         pub name: String,
-        pub picture: Option<String>
+        pub picture: Option<String>,
     }
 }
 
@@ -54,7 +54,7 @@ mod config {
     #[serde(untagged)]
     pub enum RouteData {
         Path(String),
-        Group(Vec<Route>)
+        Group(Vec<Route>),
     }
 
     #[derive(Debug, Deserialize)]
@@ -70,9 +70,9 @@ mod config {
 
     pub fn load<P: AsRef<Path>>(path: P) -> Config {
         fn fill_in_internals(routes: &mut [Route]) {
-            routes.iter_mut().for_each(|route|{
-                route.escaped_label = route.label.replace([' ','.'], "_");
-                match  &mut route.data {
+            routes.iter_mut().for_each(|route| {
+                route.escaped_label = route.label.replace([' ', '.'], "_");
+                match &mut route.data {
                     RouteData::Path(_) => route.is_group = false,
                     RouteData::Group(group) => {
                         route.is_group = true;
@@ -82,7 +82,9 @@ mod config {
             })
         }
 
-        let mut conf: Config = toml::from_str(&std::fs::read_to_string(path.as_ref()).expect("Config can't be read")).expect("Config can't be parsed");
+        let mut conf: Config =
+            toml::from_str(&std::fs::read_to_string(path.as_ref()).expect("Config can't be read"))
+                .expect("Config can't be parsed");
         // Fill escaped names
         fill_in_internals(&mut conf.routes);
         conf
@@ -96,9 +98,9 @@ mod filters {
     use aliri::Jwt;
     #[cfg(feature = "container")]
     use tracing::trace;
-    use warp::{http::HeaderValue, hyper::header, Filter, Rejection};
     #[cfg(feature = "container")]
     use warp::reject;
+    use warp::{http::HeaderValue, hyper::header, Filter, Rejection};
 
     #[cfg(not(feature = "container"))]
     use crate::consts;
@@ -111,11 +113,14 @@ mod filters {
     struct MalformedJwt;
 
     #[cfg(feature = "container")]
-    impl reject::Reject for  MalformedJwt{}
+    impl reject::Reject for MalformedJwt {}
 
     pub fn disable_cache() -> warp::reply::with::WithHeaders {
         let mut no_cache = warp::http::HeaderMap::new();
-        no_cache.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache, no-store, must-revalidate"));
+        no_cache.insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("no-cache, no-store, must-revalidate"),
+        );
         no_cache.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
         no_cache.insert(header::EXPIRES, HeaderValue::from_static("0"));
         warp::reply::with::headers(no_cache)
@@ -144,12 +149,17 @@ mod filters {
     #[cfg(feature = "container")]
     pub fn jwt(
         jwt_decoder: Arc<crate::jwt::JwtDecoder>,
-    ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = Rejection> + Clone
-    {
-        warp::header::header("X-Pomerium-Jwt-Assertion").map(move|s|(s, jwt_decoder.clone())).and_then(  move |(s, jwt_decoder):(String, Arc<JwtDecoder>)| async move {
-            trace!(jwt = s);
-            jwt_decoder.decode(Jwt::from(s)).ok_or(reject::custom(MalformedJwt))
-        })
+    ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = Rejection> + Clone {
+        warp::header::header("X-Pomerium-Jwt-Assertion")
+            .map(move |s| (s, jwt_decoder.clone()))
+            .and_then(
+                move |(s, jwt_decoder): (String, Arc<JwtDecoder>)| async move {
+                    trace!(jwt = s);
+                    jwt_decoder
+                        .decode(Jwt::from(s))
+                        .ok_or(reject::custom(MalformedJwt))
+                },
+            )
     }
 
     #[cfg(not(feature = "container"))]
@@ -157,15 +167,12 @@ mod filters {
         _: Arc<crate::jwt::JwtDecoder>,
     ) -> impl Filter<Extract = (crate::common::CurrentUserData,), Error = std::convert::Infallible> + Clone
     {
-
         // Unfortunately, we can't just use debug here for testing since it is somehow dropping
         // the context in my build
-        warp::any().map(||{
-            crate::common::CurrentUserData { 
-                email: consts::defaults::debug::EMAIL.to_string(), 
-                name: consts::defaults::debug::NAME.to_string(),
-                picture: None
-            }
+        warp::any().map(|| crate::common::CurrentUserData {
+            email: consts::defaults::debug::EMAIL.to_string(),
+            name: consts::defaults::debug::NAME.to_string(),
+            picture: None,
         })
     }
 }
@@ -179,7 +186,7 @@ mod pomerium_routes {
     #[derive(Clone, Debug, Deserialize)]
     pub struct KnownRoutes {
         pub frontchannel_logout_uri: String,
-        pub jwks_uri: String
+        pub jwks_uri: String,
     }
 
     #[cfg(feature = "container")]
@@ -225,15 +232,18 @@ async fn main() {
         let pomerium_conf = pomerium::load_conf(conf_dir.join("pomerium.yaml"));
 
         let known_routes = pomerium_routes::obtain_known(&config.domain.name);
-        let jwt_decoder = Arc::new(jwt::JwtDecoder::new(&config.domain.name, &known_routes.jwks_uri));
-        let global_data = Arc::new(rendering::GlobalData { 
-                sign_out_url: known_routes.frontchannel_logout_uri
-            });
+        let jwt_decoder = Arc::new(jwt::JwtDecoder::new(
+            &config.domain.name,
+            &known_routes.jwks_uri,
+        ));
+        let global_data = Arc::new(rendering::GlobalData {
+            sign_out_url: known_routes.frontchannel_logout_uri,
+        });
         let renderer = rendering::Renderer::from(
             config.routes,
             pomerium_conf.routes,
             &html_files.join("index.html"),
-            global_data.clone()
+            global_data.clone(),
         );
 
         (renderer, jwt_decoder, global_data)
@@ -251,7 +261,7 @@ async fn main() {
         .and(filters::jwt(jwt_decoder))
         .map(move |user_data: common::CurrentUserData| {
             trace!("Jwt received!");
-            let html= renderer_clone.clone().render(user_data);
+            let html = renderer_clone.clone().render(user_data);
             trace!("Done rendering");
             warp::reply::html(html)
         })
@@ -272,7 +282,7 @@ async fn main() {
     let app = index
         .or(assets)
         .or(redirect_index)
-        .recover( move |err| {
+        .recover(move |err| {
             let global_data = global_data.clone();
             async move {
                 let hb = Arc::new(Handlebars::new());
@@ -292,9 +302,20 @@ async fn main() {
 
     let serve_address = std::env::var("HTTP_ADDRESS")
         .ok()
-        .map(|s: String| s.parse::<Ipv4Addr>().expect("Not a valid IPv4 address").octets())
+        .map(|s: String| {
+            s.parse::<Ipv4Addr>()
+                .expect("Not a valid IPv4 address")
+                .octets()
+        })
         .unwrap_or(consts::defaults::SERVE_ADRESS);
 
     // spawn proxy server
-    warp::serve(app).run((serve_address, http_port)).await
+    warp::serve(app)
+        /*.graceful(async move {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("failed to listen to shutdown signal");
+        })*/
+        .run((serve_address, http_port))
+        .await
 }
